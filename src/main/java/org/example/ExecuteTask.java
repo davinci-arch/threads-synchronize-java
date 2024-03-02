@@ -2,6 +2,8 @@ package org.example;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class ExecuteTask {
@@ -9,11 +11,13 @@ public class ExecuteTask {
     private int amountOfThreads;
     private int[] array = new int[1_000];
     private FindMinimalElement[] threads;
+    private CountDownLatch countDownLatch;
     private volatile int minValue = Integer.MAX_VALUE;
     private volatile int indexVal = 0;
     public ExecuteTask(int amountOfThreads) {
         this.amountOfThreads = amountOfThreads;
         threads = new FindMinimalElement[amountOfThreads];
+        countDownLatch = new CountDownLatch(amountOfThreads);
     }
 
     public void execute() {
@@ -22,25 +26,14 @@ public class ExecuteTask {
         int[] indexesParts = indexesParts();
         System.out.println(Arrays.toString(indexesParts));
         for (int i = 0; i < amountOfThreads; i++) {
-            threads[i] = new FindMinimalElement(array,this, indexesParts[i], indexesParts[i+1]);
+            threads[i] = new FindMinimalElement(array,this, indexesParts[i], indexesParts[i+1], countDownLatch);
             threads[i].start();
-
         }
 
-        boolean allDone = false;
-        while (!allDone) {
-            for (int i = 0; i < amountOfThreads; i++) {
-                if (!threads[i].isAlive()) {
-                    allDone = true;
-                } else {
-                    allDone = false;
-                }
-            }
-            try {
-                TimeUnit.MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         System.out.println("Min value: " + minValue);
         System.out.println("Index of min value: " + indexVal);
@@ -68,7 +61,7 @@ public class ExecuteTask {
         for (int i = 0; i < array.length; i++) {
             array[i] = ranVal.nextInt(1, 1000);
         }
-        array[ranVal.nextInt(0,array.length)] = -1;
+        array[ranVal.nextInt(0, array.length)] = -1;
     }
 
     public void setMinValue(int minValue) {

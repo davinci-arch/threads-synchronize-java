@@ -1,16 +1,21 @@
 package org.example;
 
+import java.util.concurrent.CountDownLatch;
+
 public class FindMinimalElement extends Thread{
 
+    private static int counter = 0;
     private int[] array;
     private ExecuteTask task;
     private int startIdx, endIdx;
-    // object to set an minmal value;
-    public FindMinimalElement(int[] array, ExecuteTask task, int startIdx, int endIdx) {
+    private CountDownLatch countDownLatch;
+
+    public FindMinimalElement(int[] array, ExecuteTask task, int startIdx, int endIdx, CountDownLatch countDownLatch) {
         this.array = array;
         this.task = task;
         this.startIdx = startIdx;
         this.endIdx = endIdx;
+        this.countDownLatch = countDownLatch;
     }
 
     @Override
@@ -28,6 +33,7 @@ public class FindMinimalElement extends Thread{
             task.setMinValue(minValue);
             task.setIndexVal(minValIdx);
         }
+        countDownLatch.countDown();
 
     }
 }
